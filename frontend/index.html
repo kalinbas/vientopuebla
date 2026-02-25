@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Viento Puebla</title>
+    <meta
+      name="description"
+      content="Panel de viento en vivo para estaciones de Puebla con historial, promedios y rosa de vientos."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Chivo:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <main class="shell">
+      <header class="hero panel">
+        <div>
+          <p class="eyebrow">Inteligencia de Viento</p>
+          <h1>Panel Viento Puebla</h1>
+          <p class="subtitle">Datos en vivo cada 5 segundos con analisis historico y tendencias de direccion.</p>
+        </div>
+        <div class="hero-meta">
+          <div class="meta-item">
+            <span class="meta-label">Servidor</span>
+            <span id="backendStatus" class="pill pill-unknown">Verificando...</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Ultima actualizacion</span>
+            <span id="lastRefresh">-</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel controls">
+        <label>
+          Estacion
+          <select id="stationSelect"></select>
+        </label>
+        <label>
+          Rango
+          <select id="rangeSelect">
+            <option value="1h">Ultima 1 hora</option>
+            <option value="6h" selected>Ultimas 6 horas</option>
+            <option value="24h">Ultimas 24 horas</option>
+            <option value="7d">Ultimos 7 dias</option>
+          </select>
+        </label>
+        <label>
+          Resolucion
+          <select id="bucketSelect">
+            <option value="1">1 minute</option>
+            <option value="5" selected>5 minutes</option>
+            <option value="15">15 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </label>
+        <label>
+          Base API
+          <input id="apiBaseInput" type="text" placeholder="https://api.wind.example.com" />
+        </label>
+      </section>
+
+      <section class="kpis">
+        <article class="panel kpi">
+          <h3>Velocidad Actual</h3>
+          <p id="kpiSpeed" class="kpi-value">-</p>
+        </article>
+        <article class="panel kpi">
+          <h3>Direccion</h3>
+          <p id="kpiDirection" class="kpi-value">-</p>
+        </article>
+        <article class="panel kpi">
+          <h3>Promedio 1m</h3>
+          <p id="kpiAvg1m" class="kpi-value">-</p>
+        </article>
+        <article class="panel kpi">
+          <h3>Promedio 5m</h3>
+          <p id="kpiAvg5m" class="kpi-value">-</p>
+        </article>
+        <article class="panel kpi">
+          <h3>Promedio 15m</h3>
+          <p id="kpiAvg15m" class="kpi-value">-</p>
+        </article>
+        <article class="panel kpi">
+          <h3>Pico 24h</h3>
+          <p id="kpiPeak24h" class="kpi-value">-</p>
+        </article>
+      </section>
+
+      <section class="charts">
+        <article class="panel chart-panel">
+          <div class="panel-title-row">
+            <h2>Tendencia de Velocidad</h2>
+            <span id="speedMeta" class="muted">-</span>
+          </div>
+          <canvas id="speedChart"></canvas>
+        </article>
+        <article class="panel chart-panel">
+          <div class="panel-title-row">
+            <h2>Tendencia de Direccion</h2>
+            <span id="directionMeta" class="muted">Grados</span>
+          </div>
+          <canvas id="directionChart"></canvas>
+        </article>
+        <article class="panel chart-panel rose-panel">
+          <div class="panel-title-row">
+            <h2>Rosa de Vientos</h2>
+            <span id="roseMeta" class="muted">Frecuencia por direccion</span>
+          </div>
+          <canvas id="roseChart"></canvas>
+        </article>
+      </section>
+
+      <section class="panel table-wrap">
+        <div class="panel-title-row">
+          <h2>Mediciones Recientes</h2>
+          <span id="tableMeta" class="muted">-</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Velocidad (km/h)</th>
+                <th>Direccion</th>
+                <th>Direccion (grados)</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

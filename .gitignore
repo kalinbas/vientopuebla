@@ -1,0 +1,12 @@
+# Node
+backend/node_modules/
+
+# Local env and data
+backend/.env
+backend/data/
+.run-*.log
+.run-*.pid
+
+# OS/editor
+.DS_Store
+.vscode/
