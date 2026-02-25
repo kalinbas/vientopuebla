@@ -8,6 +8,10 @@ Este proyecto funciona 100% en frontend.
 - Hace refresh cada 5 segundos.
 - Acumula datos en memoria mientras la pagina esta abierta.
 
+## Demo en Vivo
+
+- GitHub Pages: [https://kalinbas.github.io/vientopuebla/](https://kalinbas.github.io/vientopuebla/)
+
 ## Como Funciona
 
 1. Al abrir la pagina, carga historial inicial por estacion con:
@@ -52,6 +56,7 @@ Pasos:
 1. Hacer push a `main`.
 2. En GitHub, habilitar Pages con origen "GitHub Actions".
 3. Esperar el workflow de despliegue.
+4. URL publica: [https://kalinbas.github.io/vientopuebla/](https://kalinbas.github.io/vientopuebla/)
 
 ## Limitaciones
 
