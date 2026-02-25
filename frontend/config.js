@@ -1,4 +1,10 @@
 window.DASHBOARD_CONFIG = {
-  // Cambia esto por el dominio de tu API en la VM, por ejemplo: https://api.wind.example.com
-  API_BASE: "https://api.wind.example.com",
+  SOURCE_API_URL: "https://viento.saboresgaleazzi.com/api_viento_ultimos.php",
+  INITIAL_HISTORY_LIMIT: 180,
+  POLL_INTERVAL_MS: 5000,
+  STALE_AFTER_SECONDS: 20,
+  DEFAULT_STATIONS: [
+    { id: 1, name: "Chipilo" },
+    { id: 2, name: "San Bernardino" },
+  ],
 };

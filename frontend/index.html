@@ -6,7 +6,7 @@
     <title>Panel Viento Puebla</title>
     <meta
       name="description"
-      content="Panel de viento en vivo para estaciones de Puebla con historial, promedios y rosa de vientos."
+      content="Panel de viento en vivo para estaciones de Puebla con historial local, promedios y rosa de vientos."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,19 +26,33 @@
         <div>
           <p class="eyebrow">Inteligencia de Viento</p>
           <h1>Panel Viento Puebla</h1>
-          <p class="subtitle">Datos en vivo cada 5 segundos con analisis historico y tendencias de direccion.</p>
+          <p class="subtitle">
+            Sin servidor propio: consulta directa de la API cada 5 segundos y acumulacion de datos mientras esta pagina permanece abierta.
+          </p>
         </div>
         <div class="hero-meta">
           <div class="meta-item">
-            <span class="meta-label">Servidor</span>
-            <span id="backendStatus" class="pill pill-unknown">Verificando...</span>
+            <span class="meta-label">Fuente API</span>
+            <span id="sourceStatus" class="pill pill-unknown">Cargando...</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">Ultima actualizacion</span>
+            <span class="meta-label">Ultima actualizacion local</span>
             <span id="lastRefresh">-</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Puntos en memoria</span>
+            <span id="memoryCount">0</span>
           </div>
         </div>
       </header>
+
+      <section class="panel live-wrap">
+        <div class="panel-title-row">
+          <h2>Estaciones en Tiempo Real</h2>
+          <span class="muted">Actualiza cada 5 segundos</span>
+        </div>
+        <div id="realtimeStations" class="live-grid"></div>
+      </section>
 
       <section class="panel controls">
         <label>
@@ -48,8 +62,8 @@
         <label>
           Rango
           <select id="rangeSelect">
-            <option value="1h">Ultima 1 hora</option>
-            <option value="6h" selected>Ultimas 6 horas</option>
+            <option value="1h" selected>Ultima 1 hora</option>
+            <option value="6h">Ultimas 6 horas</option>
             <option value="24h">Ultimas 24 horas</option>
             <option value="7d">Ultimos 7 dias</option>
           </select>
@@ -57,15 +71,11 @@
         <label>
           Resolucion
           <select id="bucketSelect">
-            <option value="1">1 minute</option>
-            <option value="5" selected>5 minutes</option>
-            <option value="15">15 minutes</option>
-            <option value="60">60 minutes</option>
+            <option value="1">1 minuto</option>
+            <option value="5" selected>5 minutos</option>
+            <option value="15">15 minutos</option>
+            <option value="60">60 minutos</option>
           </select>
-        </label>
-        <label>
-          Base API
-          <input id="apiBaseInput" type="text" placeholder="https://api.wind.example.com" />
         </label>
       </section>
 

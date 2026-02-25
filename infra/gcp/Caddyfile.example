@@ -1,5 +1,0 @@
-# Reemplaza api.wind.example.com por tu dominio real y asegurate de que el registro A de DNS apunte a tu VM.
-api.wind.example.com {
-  encode zstd gzip
-  reverse_proxy 127.0.0.1:8080
-}

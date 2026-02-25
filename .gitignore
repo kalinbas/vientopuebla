@@ -1,11 +1,8 @@
-# Node
-backend/node_modules/
-
-# Local env and data
-backend/.env
-backend/data/
+# Local runtime
 .run-*.log
 .run-*.pid
+backend/
+infra/
 
 # OS/editor
 .DS_Store
