@@ -586,7 +586,7 @@ function renderRealtimeCards(selectedStationId) {
       const statusClass = stale ? "down" : "up";
       const arrowDeg =
         latest && typeof latest.direction_deg === "number" && Number.isFinite(latest.direction_deg)
-          ? latest.direction_deg
+          ? (latest.direction_deg + 180) % 360
           : null;
       const selectedClass = selectedStationId === station.station_id ? " selected" : "";
 
