@@ -207,6 +207,15 @@ a { color: #1a5276; }
 .rose_cap { font-size: 11px; color: #456; margin-top: 2px; }
 .about_row { margin: 6px 0; font-size: 12px; line-height: 1.5; }
 .maplink { color: #d17c00; font-weight: bold; text-decoration: none; }
+.lora_note {
+  font-size: 10px;
+  color: #789;
+  font-style: italic;
+  text-align: left;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ccd;
+  margin-bottom: 4px;
+}
 .lora_row {
   font-family: 'Courier New', monospace;
   font-size: 11px;

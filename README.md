@@ -36,7 +36,7 @@ Puebla, MX, plus one shared meteo sensor).
 | `api_viento_ultimos.php?limit=200&estacion=N` | raw ~5 s wind samples (recent window only) |
 | `api_meteo_ultimos.php?limit=500` | temp/humidity/pressure/battery/dew point/cloud base (~last hours) |
 | `api_historial_climatico.php?fecha=YYYY-MM-DD&estacion=N` | 48×30-min wind aggregates per day (tables + graphs) |
-| `api_mensajes_lora.php?limit=30` | raw LoRa message log |
+| `api_mensajes_lora.php?limit=30` | raw LoRa message log (one shared feed for both stations; the `estacion` param is ignored) |
 
 ## Run locally
 

@@ -80,7 +80,9 @@
       return '<div class="lora_row"><span class="lora_t">' +
         (m.hora || '').slice(11) + '</span> ' + escapeHtml(m.mensaje || '') + '</div>';
     }).join('');
-    $('tab_lora').innerHTML = rows || '<div class="about_row">No messages.</div>';
+    $('tab_lora').innerHTML =
+      '<div class="lora_note">Shared radio feed — one log for the whole system, not per station</div>' +
+      (rows || '<div class="about_row">No messages.</div>');
   }
 
   // fetched lazily — only when the tab is opened
