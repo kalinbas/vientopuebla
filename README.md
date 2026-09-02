@@ -52,7 +52,9 @@ CDN (the same charting library Holfuy uses).
 ## Deploy
 
 Pushing to `main` triggers `.github/workflows/deploy-pages.yml`, which publishes the
-`frontend/` folder to GitHub Pages.
+`frontend/` folder to GitHub Pages. GitHub Pages caches assets for 10 minutes — when
+changing any css/js file, also bump the `?v=` version suffix on the includes in
+`index.html` so browsers pick the new files up immediately.
 
 ## Config
 
