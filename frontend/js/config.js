@@ -12,10 +12,10 @@ var CONFIG = {
       id: 2,
       slug: 'chalchihuapan',
       name: 'Chalchihuapan',
-      place: 'San Bernardino Chalchihuapan, Puebla, Mexico',
-      // Coordinates are approximate — adjust to the real sensor location if known
-      lat: 19.166, lon: -98.353,
-      altitude: 2145,           // m AMSL (derived: cloud base 725 m AGL shown as 2870 m AMSL)
+      place: 'Paragliding takeoff, San Bernardino Chalchihuapan, Puebla, Mexico',
+      // Takeoff per paraglidingearth.com ("Chalchihuapan - Puebla")
+      lat: 18.9632, lon: -98.3421,
+      altitude: 2336,           // m AMSL (takeoff)
       // Flyable wind-direction sectors, degrees. null = don't draw.
       // Example: { takeoff: [{ from: 340, to: 40 }], optimal: [{ from: 350, to: 20 }] }
       sectors: null,
@@ -28,9 +28,10 @@ var CONFIG = {
       id: 1,
       slug: 'chipilo',
       name: 'Chipilo',
-      place: 'Chipilo, Puebla, Mexico',
-      lat: 19.226, lon: -98.341,
-      altitude: 2145,
+      place: 'Chipilo de Francisco Javier Mina (village center), Puebla, Mexico',
+      // Village center per Wikipedia (19°00'22"N 98°19'50"W)
+      lat: 19.0061, lon: -98.3306,
+      altitude: 2150,
       sectors: null,
       links: [
         { label: 'Original live panel', url: 'https://viento.saboresgaleazzi.com/' },
