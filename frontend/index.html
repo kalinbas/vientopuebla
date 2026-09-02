@@ -1,157 +1,174 @@
-<!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel Viento Puebla</title>
-    <meta
-      name="description"
-      content="Panel de viento en vivo para estaciones de Puebla con historial local, promedios y rosa de vientos."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Chivo:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  </head>
-  <body>
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puebla: Chipilo &amp; Chalchihuapan wind &amp; weather report</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23378590'/%3E%3Cpath d='M8 2 L11 9 L8 7.5 L5 9 Z' fill='cyan'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://viento.saboresgaleazzi.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dygraphs@2.2.1/dist/dygraph.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
 
-    <main class="shell">
-      <header class="hero panel">
-        <div>
-          <p class="eyebrow">Inteligencia de Viento</p>
-          <h1>Panel Viento Puebla</h1>
-          <p class="subtitle">
-            Sin servidor propio: consulta directa de la API cada 5 segundos y acumulacion de datos mientras esta pagina permanece abierta.
-          </p>
+<header class="hero">
+  <div class="hero_inner">
+    <div class="logo">PUEBLA<span>WIND</span></div>
+    <div class="tagline">Chipilo · Chalchihuapan — live wind &amp; weather</div>
+  </div>
+</header>
+
+<div class="page">
+
+  <div id="station_tabs"></div>
+
+  <!-- live widget -->
+  <div class="widget">
+    <div class="w_titlebar">
+      <span id="st_title">…</span>
+      <span id="updated"></span>
+    </div>
+    <div class="w_body">
+      <div class="w_dial"><canvas id="wind_kok" width="340" height="340"></canvas></div>
+
+      <div class="w_data">
+        <div class="w_col">
+          <div class="hcell">Wind now <span class="u">(km/h)</span></div>
+          <div class="vcell big" id="w_now">-</div>
+          <div class="hcell">Temperature</div>
+          <div class="vcell temp_block">
+            <span id="temp_big" class="temp_big">-</span>
+            <span class="temp_mm">
+              <span class="tm" id="temp_now">-</span>
+              <span class="tm tmax" id="temp_max">-</span>
+              <span class="tm tmin" id="temp_min">-</span>
+            </span>
+          </div>
+          <div class="duo">
+            <div>
+              <div class="hcell">Humidity</div>
+              <div class="vcell" id="hum">-</div>
+            </div>
+            <div>
+              <div class="hcell">Cloud base</div>
+              <div class="vcell" id="cloud">-</div>
+            </div>
+          </div>
         </div>
-        <div class="hero-meta">
-          <div class="meta-item">
-            <span class="meta-label">Fuente API</span>
-            <span id="sourceStatus" class="pill pill-unknown">Cargando...</span>
+
+        <div class="w_col">
+          <div class="hcell">Wind tendency</div>
+          <div class="vcell duo_inline">
+            <span id="tend_speed">-</span>
+            <span id="tend_dir">-</span>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">Ultima actualizacion local</span>
-            <span id="lastRefresh">-</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Puntos en memoria</span>
-            <span id="memoryCount">0</span>
+          <div class="hcell">Wind avg. 15min <span class="u">(km/h)</span></div>
+          <div class="vcell big" id="avg15">-</div>
+          <div class="hcell">Daily wind</div>
+          <div class="vcell" id="daily_wind">-</div>
+          <div class="duo">
+            <div>
+              <div class="hcell">Dew Point</div>
+              <div class="vcell" id="dew">-</div>
+            </div>
+            <div>
+              <div class="hcell">Std. Pressure</div>
+              <div class="vcell" id="press">-</div>
+            </div>
           </div>
         </div>
-      </header>
 
-      <section class="panel live-wrap">
-        <div class="panel-title-row">
-          <h2>Estaciones en Tiempo Real</h2>
-          <span class="muted">Actualiza cada 5 segundos</span>
+        <div class="w_bottom">
+          <span class="hcell">Battery</span>
+          <span class="vcell" id="batt">-</span>
         </div>
-        <div id="realtimeStations" class="live-grid"></div>
-      </section>
+      </div>
 
-      <section class="panel controls">
-        <label>
-          Estacion
-          <select id="stationSelect"></select>
-        </label>
-        <label>
-          Rango
-          <select id="rangeSelect">
-            <option value="1h" selected>Ultima 1 hora</option>
-            <option value="6h">Ultimas 6 horas</option>
-            <option value="24h">Ultimas 24 horas</option>
-            <option value="7d">Ultimos 7 dias</option>
-          </select>
-        </label>
-        <label>
-          Resolucion
-          <select id="bucketSelect">
-            <option value="1">1 minuto</option>
-            <option value="5" selected>5 minutos</option>
-            <option value="15">15 minutos</option>
-            <option value="60">60 minutos</option>
-          </select>
-        </label>
-      </section>
-
-      <section class="kpis">
-        <article class="panel kpi">
-          <h3>Velocidad Actual</h3>
-          <p id="kpiSpeed" class="kpi-value">-</p>
-        </article>
-        <article class="panel kpi">
-          <h3>Direccion</h3>
-          <p id="kpiDirection" class="kpi-value">-</p>
-        </article>
-        <article class="panel kpi">
-          <h3>Promedio 1m</h3>
-          <p id="kpiAvg1m" class="kpi-value">-</p>
-        </article>
-        <article class="panel kpi">
-          <h3>Promedio 5m</h3>
-          <p id="kpiAvg5m" class="kpi-value">-</p>
-        </article>
-        <article class="panel kpi">
-          <h3>Promedio 15m</h3>
-          <p id="kpiAvg15m" class="kpi-value">-</p>
-        </article>
-        <article class="panel kpi">
-          <h3>Pico 24h</h3>
-          <p id="kpiPeak24h" class="kpi-value">-</p>
-        </article>
-      </section>
-
-      <section class="charts">
-        <article class="panel chart-panel">
-          <div class="panel-title-row">
-            <h2>Tendencia de Velocidad</h2>
-            <span id="speedMeta" class="muted">-</span>
-          </div>
-          <canvas id="speedChart"></canvas>
-        </article>
-        <article class="panel chart-panel">
-          <div class="panel-title-row">
-            <h2>Tendencia de Direccion</h2>
-            <span id="directionMeta" class="muted">Grados</span>
-          </div>
-          <canvas id="directionChart"></canvas>
-        </article>
-        <article class="panel chart-panel rose-panel">
-          <div class="panel-title-row">
-            <h2>Rosa de Vientos</h2>
-            <span id="roseMeta" class="muted">Frecuencia por direccion</span>
-          </div>
-          <canvas id="roseChart"></canvas>
-        </article>
-      </section>
-
-      <section class="panel table-wrap">
-        <div class="panel-title-row">
-          <h2>Mediciones Recientes</h2>
-          <span id="tableMeta" class="muted">-</span>
+      <div class="w_tabs">
+        <div class="wtab_bar">
+          <span class="wtab" data-tab="about">About</span>
+          <span class="wtab wtab_active" data-tab="dirstat">Dir.Stat.</span>
+          <span class="wtab" data-tab="lora">LoRa</span>
         </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Hora</th>
-                <th>Velocidad (km/h)</th>
-                <th>Direccion</th>
-                <th>Direccion (grados)</th>
-              </tr>
-            </thead>
-            <tbody id="historyBody"></tbody>
-          </table>
+        <div id="tab_about" class="tabcontent" style="display:none"></div>
+        <div id="tab_dirstat" class="tabcontent">
+          <canvas id="rose_canvas" width="270" height="222"></canvas>
+          <div class="rose_cap">Wind directions, last 15 min</div>
         </div>
-      </section>
-    </main>
+        <div id="tab_lora" class="tabcontent" style="display:none"></div>
+      </div>
+    </div>
+  </div>
 
-    <script src="./config.js"></script>
-    <script src="./app.js"></script>
-  </body>
+  <!-- averages -->
+  <div class="blackbar">
+    <span class="bb_title">Averages ⟷</span>
+    <span class="bb_right" id="avg_updated"></span>
+  </div>
+  <div class="avg_wrap">
+    <div id="table_today"></div>
+    <div id="table_prev"></div>
+  </div>
+
+  <!-- graphs -->
+  <div class="blackbar">
+    <span class="bb_title">Graphs</span>
+    <span class="zoom_lbl">ZOOM</span>
+    <span class="zoomlevel" data-hours="3">3 h</span>
+    <span class="zoomlevel" data-hours="6">6 h</span>
+    <span class="zoomlevel" data-hours="12">12h</span>
+    <span class="zoomlevel" data-hours="24">1 d</span>
+    <span class="zoomlevel" data-hours="120">5 d(max)</span>
+    <label class="sync"><input type="checkbox" id="sync_check" checked> Synchronized zoom</label>
+    <span class="bb_right" id="graphs_updated"></span>
+  </div>
+  <div id="graphs_cont">
+    <div class="graph_block" id="speed_block">
+      <div class="gtitle">-&nbsp; Wind speed (km/h)<div id="speed_labels" class="glabels"></div></div>
+      <div id="speed_graph" class="graph"></div>
+    </div>
+    <div class="graph_block" id="direction_block">
+      <div class="gtitle">-&nbsp; Wind direction (°deg)<div id="direction_labels" class="glabels"></div></div>
+      <div id="direction_graph" class="graph"></div>
+    </div>
+    <div class="graph_block" id="temp_block">
+      <div class="gtitle">-&nbsp; Temperature &amp; Dew Point (°C)<div id="temp_labels" class="glabels"></div></div>
+      <div id="temp_graph" class="graph"></div>
+      <div class="gnote">Meteo history is limited to the most recent hours by the data API.</div>
+    </div>
+    <div class="graph_block" id="humidity_block">
+      <div class="gtitle">-&nbsp; Humidity (%)<div id="humidity_labels" class="glabels"></div></div>
+      <div id="humidity_graph" class="graph"></div>
+    </div>
+    <div class="graph_block" id="pressure_block">
+      <div class="gtitle">-&nbsp; Standard Pressure (hPa)<div id="pressure_labels" class="glabels"></div></div>
+      <div id="pressure_graph" class="graph"></div>
+    </div>
+    <div class="graph_block" id="battery_block">
+      <div class="gtitle">-&nbsp; Battery (%)<div id="battery_labels" class="glabels"></div></div>
+      <div id="battery_graph" class="graph"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Layout inspired by <a href="https://holfuy.com/en/weather/609" target="_blank" rel="noopener">holfuy.com</a> ·
+    Data from <a href="https://viento.saboresgaleazzi.com/" target="_blank" rel="noopener">viento.saboresgaleazzi.com</a>
+    (Chipilo / Chalchihuapan, Puebla)
+  </div>
+
+</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/dygraphs@2.2.1/dist/dygraph.min.js"></script>
+<script defer src="js/config.js"></script>
+<script defer src="js/util.js"></script>
+<script defer src="js/colors.js"></script>
+<script defer src="js/api.js"></script>
+<script defer src="js/dial.js"></script>
+<script defer src="js/widget.js"></script>
+<script defer src="js/tables.js"></script>
+<script defer src="js/graphs.js"></script>
+<script defer src="js/rose.js"></script>
+<script defer src="js/main.js"></script>
+</body>
 </html>

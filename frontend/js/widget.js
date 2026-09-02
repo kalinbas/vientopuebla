@@ -1,0 +1,103 @@
+/* Live widget: fills the Holfuy-style cells from the data store */
+var Widget = (function () {
+
+  function $(id) { return document.getElementById(id); }
+  function setHtml(id, html) { var e = $(id); if (e) e.innerHTML = html; }
+
+  function stationCfg(id) {
+    for (var i = 0; i < CONFIG.stations.length; i++)
+      if (CONFIG.stations[i].id === id) return CONFIG.stations[i];
+    return CONFIG.stations[0];
+  }
+
+  // full refresh of the widget for one station
+  function update(stationId) {
+    var cfg = stationCfg(stationId);
+    var live = Api.liveStats(stationId);
+    var daily = Api.dailyStats(stationId);
+    var met = Api.latestMeteo();
+    var dTemp = Api.dailyTemp();
+
+    setHtml('st_title', cfg.name);
+
+    // dial
+    Dial.draw('wind_kok', {
+      speed: live ? live.speed : null,
+      dir: live ? live.dir : null,
+      temp: met ? met.temp : null,
+      sectors: cfg.sectors
+    });
+
+    // wind now: "speed-gust unit DIR"
+    if (live) {
+      setHtml('w_now',
+        '<b>' + Math.round(live.speed) + '</b>-<b>' + Math.round(live.gust) + '</b>' +
+        '<span class="unit">km/h</span> <b>' + live.dirStr + '</b>');
+      setHtml('tend_speed', live.speedTendency + ' <span class="tick">' + live.speedIcon + '</span>');
+      setHtml('tend_dir', live.dirTendency + ' <span class="tick">' + live.dirIcon + '</span>');
+      setHtml('avg15',
+        '<b>' + (live.avg15 == null ? '-' : Math.round(live.avg15)) + '</b>-<b>' +
+        (live.gust15 == null ? '-' : Math.round(live.gust15)) + '</b>' +
+        '<span class="unit">km/h</span> <b>' + Util.degToCompass(live.dir15) + '</b>');
+    } else {
+      setHtml('w_now', '-'); setHtml('tend_speed', '-');
+      setHtml('tend_dir', '-'); setHtml('avg15', '-');
+    }
+
+    // daily wind
+    setHtml('daily_wind',
+      '<span class="ic">🍃</span><b>' + Util.fmt(daily.avg, 1) + '</b><span class="unit">km/h</span> ' +
+      '<span class="ic">💨</span><b>' + (daily.max == null ? '-' : Math.round(daily.max)) +
+      '</b><span class="unit">km/h</span>');
+
+    // temperature block
+    if (met && met.temp != null) {
+      var tb = $('temp_big');
+      if (tb) {
+        tb.textContent = Util.fmt(met.temp, 1);
+        tb.style.background = Colors.tempToColor(met.temp);
+      }
+    } else if ($('temp_big')) {
+      $('temp_big').textContent = '-';
+      $('temp_big').style.background = 'white';
+    }
+    setHtml('temp_now', (met && met.temp != null ? Math.round(met.temp) : '-') + ' °C');
+    setHtml('temp_max', (dTemp.max == null ? '-' : Util.fmt(dTemp.max, 1)) + ' °C');
+    setHtml('temp_min', (dTemp.min == null ? '-' : Util.fmt(dTemp.min, 1)) + ' °C');
+
+    // meteo cells
+    if (met) {
+      setHtml('hum', '<b>' + Util.fmt(met.hum, 1) + '</b><span class="unit"> %</span>');
+      setHtml('cloud', met.cloudAgl == null ? '-'
+        : '<b>' + Math.round(met.cloudAgl + CONFIG.meteoAltitude) + '</b><span class="unit">m AMSL</span>');
+      var cl = $('cloud');
+      if (cl && met.cloudAgl != null) cl.title = Math.round(met.cloudAgl) + ' m above ground';
+      setHtml('dew', '<b>' + Util.fmt(met.dew, 1) + '</b><span class="unit"> °C</span>');
+      var slp = Util.seaLevelPressure(met.pa, CONFIG.meteoAltitude, met.temp);
+      setHtml('press', slp == null ? '-'
+        : '<b>' + Util.fmt(slp, 1) + '</b><span class="unit">hPa</span>');
+      var pr = $('press');
+      if (pr && met.pa != null) pr.title = 'Station pressure: ' + Util.fmt(met.pa / 100, 1) + ' hPa';
+      setHtml('batt', met.batt == null ? '-'
+        : '🔋 <b>' + Math.round(met.batt) + '</b> % &nbsp;<span class="unit">at ' +
+          (met.tiempo || '').slice(11, 16) + '</span>');
+    } else {
+      ['hum', 'cloud', 'dew', 'press', 'batt'].forEach(function (id) { setHtml(id, '-'); });
+    }
+
+    tick(stationId);
+  }
+
+  // 1-second ticker: freshness only
+  function tick(stationId) {
+    var live = Api.liveStats(stationId);
+    var el = $('updated');
+    if (!el) return;
+    if (!live) { el.innerHTML = 'no data'; el.className = 'stale'; return; }
+    var age = (Date.now() - live.epoch) / 1000;
+    el.innerHTML = '⏱ ' + Util.agoText(age);
+    el.className = age > CONFIG.staleAfterSec ? 'stale' : '';
+  }
+
+  return { update: update, tick: tick, stationCfg: stationCfg };
+})();
