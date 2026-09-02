@@ -26,7 +26,11 @@
   function switchStation(id) {
     currentStation = id;
     renderStationTabs();
-    renderAll();
+    renderAll(); // immediate paint from whatever is in memory
+    // first visit to this station: fetch its wind baseline + historial on demand
+    Promise.allSettled([Api.ensureWind(id), Api.ensureHistorial(id)]).then(function () {
+      if (currentStation === id) renderAll();
+    });
   }
 
   window.addEventListener('hashchange', function () {
@@ -107,14 +111,15 @@
 
   var lastLivePoll = Date.now();
 
+  // only the station being viewed is polled; the other is fetched on switch
   function livePoll() {
     // after a long gap (backgrounded tab, sleep) do one full refetch to fill the hole
     var catchUp = Date.now() - lastLivePoll > CONFIG.catchUpAfterMs;
     lastLivePoll = Date.now();
-    var jobs = CONFIG.stations.map(function (s) {
-      return Api.getWind(s.id, catchUp ? CONFIG.windLimit : CONFIG.windPollLimit);
-    });
-    jobs.push(Api.getMeteo(catchUp ? CONFIG.meteoLimit : CONFIG.meteoPollLimit));
+    var jobs = [
+      Api.getWind(currentStation, catchUp ? CONFIG.windLimit : CONFIG.windPollLimit),
+      Api.getMeteo(catchUp ? CONFIG.meteoLimit : CONFIG.meteoPollLimit)
+    ];
     Promise.allSettled(jobs).then(function (results) {
       Widget.notePoll(results.some(function (r) { return r.status === 'fulfilled'; }));
       Widget.update(currentStation);
@@ -122,16 +127,17 @@
     });
   }
 
-  // meteo stays current via the incremental live poll; only today's historial
-  // (and yesterday's around midnight — otherwise cache-served) needs refreshing
+  // meteo stays current via the incremental live poll; only the viewed station's
+  // today-historial needs refreshing (yesterday is cache-served except right
+  // after midnight, when fetching it also writes the completed day to the cache)
   function slowPoll() {
-    var jobs = [];
-    CONFIG.stations.forEach(function (s) {
-      jobs.push(Api.getHistorial(Util.todayMx(), s.id));
-      jobs.push(Api.getHistorial(Util.todayMx(-1), s.id)); // covers midnight rollover
-    });
+    var jobs = [
+      Api.getHistorial(Util.todayMx(), currentStation),
+      Api.getHistorial(Util.todayMx(-1), currentStation)
+    ];
     if (currentTab === 'lora') jobs.push(Api.getLora());
     Promise.allSettled(jobs).then(function () {
+      Api.meteoSave();
       Tables.render(currentStation);
       Graphs.rebuild(currentStation);
       if (currentTab === 'lora') renderLoraList();
@@ -154,6 +160,7 @@
     if (sc) sc.addEventListener('change', function () { Graphs.setSync(sc.checked); });
 
     Api.cachePrune();
+    Api.meteoLoad(); // persisted meteo history — only the gap is fetched below
 
     // Phase 1: fast first paint — live widget for the current station only
     Promise.allSettled([Api.getWind(currentStation), Api.getMeteo(3)]).then(function (results) {
@@ -162,23 +169,21 @@
       showTab(currentTab);
     });
 
-    // Phase 2: full meteo history + all stations' historial (past days come
-    // from the localStorage cache), then tables/graphs and the pollers
-    var jobs = [Api.getMeteo()];
-    CONFIG.stations.forEach(function (s) {
-      if (s.id !== currentStation) jobs.push(Api.getWind(s.id));
-      for (var off = 0; off < CONFIG.graphDays; off++)
-        jobs.push(Api.getHistorial(Util.todayMx(-off), s.id));
-    });
+    // Phase 2: bridge the meteo gap + the viewed station's historial (past days
+    // come from the localStorage cache), then tables/graphs and the pollers.
+    // The other station loads on demand when switched to.
+    var jobs = [Api.getMeteo(Api.meteoGapLimit()), Api.ensureHistorial(currentStation)];
     Promise.allSettled(jobs).then(function (results) {
       var failed = results.filter(function (r) { return r.status === 'rejected'; }).length;
       if (failed) console.warn(failed + ' of ' + results.length + ' initial requests failed');
+      Api.meteoSave();
       renderAll();
       lastLivePoll = Date.now();
       setInterval(livePoll, CONFIG.livePollMs);
       setInterval(slowPoll, CONFIG.slowPollMs);
       setInterval(function () { Widget.tick(currentStation); }, 1000);
     });
+    window.addEventListener('pagehide', function () { Api.meteoSave(); });
   }
 
   document.addEventListener('DOMContentLoaded', boot);

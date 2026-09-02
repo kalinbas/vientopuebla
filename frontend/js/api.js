@@ -3,12 +3,14 @@
 var Api = (function () {
 
   var store = {
-    stations: {},   // id -> { raw: [samples asc], historial: { 'YYYY-MM-DD': [buckets] } }
+    stations: {},   // id -> { raw: [samples asc], historial: { 'YYYY-MM-DD': [buckets] }, historialAt: {} }
     meteo: [],      // ascending by time
     lora: [],
     lastFetchOk: null
   };
-  CONFIG.stations.forEach(function (s) { store.stations[s.id] = { raw: [], historial: {} }; });
+  CONFIG.stations.forEach(function (s) {
+    store.stations[s.id] = { raw: [], historial: {}, historialAt: {} };
+  });
 
   function url(path, params) {
     var q = Object.keys(params).map(function (k) {
@@ -91,6 +93,69 @@ var Api = (function () {
       });
   }
 
+  /* Meteo rows are immutable, so the in-memory history is persisted and on the
+     next visit only the gap since the newest cached row is fetched. */
+  var METEO_CACHE_KEY = 'pw_meteo_v1';
+
+  function meteoSave() {
+    try {
+      localStorage.setItem(METEO_CACHE_KEY, JSON.stringify(store.meteo.map(function (m) {
+        return [m.id, m.temp, m.hum, m.pa, m.batt, m.dew, m.cloudAgl, m.tiempo];
+      })));
+    } catch (e) { }
+  }
+
+  function meteoLoad() {
+    try {
+      var c = JSON.parse(localStorage.getItem(METEO_CACHE_KEY) || 'null');
+      if (!c || !c.length) return 0;
+      store.meteo = c.map(function (a) {
+        return {
+          id: a[0], temp: a[1], hum: a[2], pa: a[3], batt: a[4], dew: a[5],
+          cloudAgl: a[6], tiempo: a[7],
+          epoch: Util.parseMxEpoch(a[7]), wall: Util.parseMxWall(a[7])
+        };
+      }).filter(function (m) { return isFinite(m.epoch); });
+      if (store.meteo.length > CONFIG.meteoKeep)
+        store.meteo.splice(0, store.meteo.length - CONFIG.meteoKeep);
+      return store.meteo.length;
+    } catch (e) { return 0; }
+  }
+
+  // fetch size needed to bridge the gap since the newest stored meteo row
+  function meteoGapLimit() {
+    var m = store.meteo;
+    if (!m.length) return CONFIG.meteoLimit;
+    var spanMin = (m[m.length - 1].epoch - m[0].epoch) / 60000;
+    var gapMin = (Date.now() - m[m.length - 1].epoch) / 60000;
+    // too little history for the graphs, or gap too old to bridge -> full fetch
+    if (spanMin < 120 || gapMin > 300) return CONFIG.meteoLimit;
+    return Math.min(CONFIG.meteoLimit, Math.max(5, Math.ceil(gapMin * 2 + 5)));
+  }
+
+  // full wind baseline only when the store doesn't already cover the live windows
+  function ensureWind(est) {
+    var raw = store.stations[est].raw;
+    var fresh = raw.length &&
+      (Date.now() - raw[raw.length - 1].epoch) < CONFIG.catchUpAfterMs;
+    return (fresh && raw.length >= 50) ? Promise.resolve(raw) : getWind(est);
+  }
+
+  // make sure a station has its graph/table days; past days come from the
+  // localStorage cache, today is refetched only when older than the slow poll
+  function ensureHistorial(est) {
+    var jobs = [];
+    var today = Util.todayMx();
+    for (var off = 0; off < CONFIG.graphDays; off++) {
+      var fecha = Util.todayMx(-off);
+      var have = store.stations[est].historial[fecha];
+      var at = store.stations[est].historialAt[fecha] || 0;
+      if (!have || (fecha === today && Date.now() - at > CONFIG.slowPollMs))
+        jobs.push(getHistorial(fecha, est));
+    }
+    return Promise.allSettled(jobs);
+  }
+
   /* Completed days never change, so their historial responses are cached in
      localStorage; only today's data is always fetched fresh. */
   var CACHE_PREFIX = 'pw_hist_v1_';
@@ -141,6 +206,7 @@ var Api = (function () {
         if (!j.ok) throw new Error('api historial not ok');
         if (isPast) cacheSet(key, j.items || []);
         store.stations[est].historial[fecha] = normalizeBuckets(j.items, fecha);
+        store.stations[est].historialAt[fecha] = Date.now();
         return store.stations[est].historial[fecha];
       });
   }
@@ -236,6 +302,8 @@ var Api = (function () {
   return {
     store: store,
     getWind: getWind, getMeteo: getMeteo, getHistorial: getHistorial, getLora: getLora,
+    ensureWind: ensureWind, ensureHistorial: ensureHistorial,
+    meteoSave: meteoSave, meteoLoad: meteoLoad, meteoGapLimit: meteoGapLimit,
     cachePrune: cachePrune,
     liveStats: liveStats, dailyStats: dailyStats, latestMeteo: latestMeteo, dailyTemp: dailyTemp
   };
