@@ -3,13 +3,14 @@
 var Api = (function () {
 
   var store = {
-    stations: {},   // id -> { raw: [samples asc], historial: { 'YYYY-MM-DD': [buckets] }, historialAt: {} }
+    stations: {},   // id -> { raw: [samples asc], historial: { 'YYYY-MM-DD': [buckets] }, historialAt, historialSynth }
     meteo: [],      // ascending by time
     lora: [],
-    lastFetchOk: null
+    lastFetchOk: null,
+    historialApiDown: false  // true when api_historial_climatico.php is failing (source-side)
   };
   CONFIG.stations.forEach(function (s) {
-    store.stations[s.id] = { raw: [], historial: {}, historialAt: {} };
+    store.stations[s.id] = { raw: [], historial: {}, historialAt: {}, historialSynth: {} };
   });
 
   function url(path, params) {
@@ -198,17 +199,66 @@ var Api = (function () {
       var cached = cacheGet(key);
       if (cached) {
         store.stations[est].historial[fecha] = normalizeBuckets(cached, fecha);
+        store.stations[est].historialSynth[fecha] = false;
         return Promise.resolve(store.stations[est].historial[fecha]);
       }
     }
     return fetchJson('api_historial_climatico.php', { fecha: fecha, estacion: est })
       .then(function (j) {
         if (!j.ok) throw new Error('api historial not ok');
+        store.historialApiDown = false;
         if (isPast) cacheSet(key, j.items || []);
         store.stations[est].historial[fecha] = normalizeBuckets(j.items, fecha);
+        store.stations[est].historialSynth[fecha] = false;
         store.stations[est].historialAt[fecha] = Date.now();
         return store.stations[est].historial[fecha];
+      })
+      .catch(function (e) {
+        // Source-side historial endpoint unavailable. For today, reconstruct
+        // buckets from the still-working live wind feed; past days can't be
+        // rebuilt (raw only reaches back a short window).
+        store.historialApiDown = true;
+        if (!isPast) { synthTodayIfNeeded(est); return store.stations[est].historial[fecha]; }
+        throw e;
       });
+  }
+
+  // Reconstruct one day's 30-min buckets from the in-memory raw samples,
+  // matching the historial API's bucket shape (avg / min / max / circular dir).
+  function synthBuckets(est, fecha) {
+    var raw = store.stations[est].raw;
+    var groups = {};
+    raw.forEach(function (s) {
+      if (!s.tiempo || s.tiempo.slice(0, 10) !== fecha) return;
+      var slot = (+s.tiempo.slice(11, 13)) * 2 + ((+s.tiempo.slice(14, 16)) < 30 ? 0 : 1);
+      (groups[slot] = groups[slot] || { vs: [], dirs: [] });
+      groups[slot].vs.push(s.v); groups[slot].dirs.push(s.d);
+    });
+    var out = [];
+    for (var slot = 0; slot < 48; slot++) {
+      var hora = Util.pad2(Math.floor(slot / 2)) + ':' + (slot % 2 ? '30' : '00');
+      var wall = Util.parseMxWall(fecha + ' ' + hora + ':00');
+      var g = groups[slot];
+      if (!g || !g.vs.length) {
+        out.push({ hora: hora, wall: wall, v: null, vmin: null, vmax: null, dir: null, n: 0 });
+      } else {
+        out.push({
+          hora: hora, wall: wall, v: mean(g.vs),
+          vmin: Math.min.apply(null, g.vs), vmax: Math.max.apply(null, g.vs),
+          dir: Util.circularMean(g.dirs), n: g.vs.length
+        });
+      }
+    }
+    return out;
+  }
+
+  // Populate today's buckets from raw when the API version is absent or itself synthetic
+  function synthTodayIfNeeded(est) {
+    var today = Util.todayMx();
+    var st = store.stations[est];
+    if (st.historial[today] && !st.historialSynth[today]) return; // real data present
+    st.historial[today] = synthBuckets(est, today);
+    st.historialSynth[today] = true;
   }
 
   function getLora() {
@@ -272,6 +322,7 @@ var Api = (function () {
 
   // Daily wind stats from today's historial buckets
   function dailyStats(est) {
+    synthTodayIfNeeded(est); // falls back to live-derived buckets if the API day is missing
     var buckets = store.stations[est].historial[Util.todayMx()] || [];
     var vs = [], ws = [], vmax = null;
     buckets.forEach(function (b) {
@@ -299,10 +350,16 @@ var Api = (function () {
     return { min: min, max: max };
   }
 
+  function historialDown() { return store.historialApiDown; }
+  function isTodaySynth(est) {
+    return !!store.stations[est].historialSynth[Util.todayMx()];
+  }
+
   return {
     store: store,
     getWind: getWind, getMeteo: getMeteo, getHistorial: getHistorial, getLora: getLora,
     ensureWind: ensureWind, ensureHistorial: ensureHistorial,
+    synthTodayIfNeeded: synthTodayIfNeeded, historialDown: historialDown, isTodaySynth: isTodaySynth,
     meteoSave: meteoSave, meteoLoad: meteoLoad, meteoGapLimit: meteoGapLimit,
     cachePrune: cachePrune,
     liveStats: liveStats, dailyStats: dailyStats, latestMeteo: latestMeteo, dailyTemp: dailyTemp

@@ -135,10 +135,24 @@ var Tables = (function () {
   }
 
   function render(stationId) {
+    Api.synthTodayIfNeeded(stationId); // fall back to live-derived buckets if the API day is missing
     var elToday = document.getElementById('table_today');
     var elPrev = document.getElementById('table_prev');
     if (elToday) elToday.innerHTML = buildTable(columnsToday(stationId));
     if (elPrev) elPrev.innerHTML = buildTable(columnsPrev(stationId));
+
+    var note = document.getElementById('avg_note');
+    if (note) {
+      if (Api.historialDown()) {
+        note.style.display = '';
+        note.innerHTML = '⚠ The station history service (source website) is currently unavailable. ' +
+          '<b>Today’s row is rebuilt live from wind readings</b> (limited to the recent window); ' +
+          'earlier days show only what was already cached.';
+      } else {
+        note.style.display = 'none';
+      }
+    }
+
     var upd = document.getElementById('avg_updated');
     if (upd) upd.textContent = 'updated: ' + Util.nowMxClock() + ' (MX)';
     // show newest columns first in view: scroll each wrapper fully right

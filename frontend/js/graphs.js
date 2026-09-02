@@ -129,6 +129,7 @@ var Graphs = (function () {
 
   function rebuild(stationId) {
     if (typeof Dygraph === 'undefined') return; // CDN unavailable
+    Api.synthTodayIfNeeded(stationId); // fall back to live-derived buckets if the API day is missing
     blockRedraw = true; // graphs created below redraw via updateOptions — don't let that sync-clobber ranges
     graphs.forEach(function (g) { g.destroy(); });
     graphs = [];

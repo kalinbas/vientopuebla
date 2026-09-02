@@ -304,6 +304,16 @@ table.avg .arr { display: inline-block; width: 15px; height: 15px; }
 table.avg .arr svg { display: block; }
 .t_dirdeg td { font-size: 9px; line-height: 1.15; }
 .nodata { color: #888; padding: 12px; }
+.avg_note {
+  background: #fff4e5;
+  border: 1px solid #f0c088;
+  color: #8a4b08;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
 
 /* ---- graphs ---- */
 #graphs_cont {
