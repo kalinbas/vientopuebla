@@ -112,6 +112,7 @@
   /* ---- polling ---- */
 
   var lastLivePoll = Date.now();
+  var lastMeteoPoll = 0;
 
   // only the station being viewed is polled; the other is fetched on switch
   function livePoll() {
@@ -119,9 +120,13 @@
     var catchUp = Date.now() - lastLivePoll > CONFIG.catchUpAfterMs;
     lastLivePoll = Date.now();
     var jobs = [
-      Api.getWind(currentStation, catchUp ? CONFIG.windLimit : CONFIG.windPollLimit),
-      Api.getMeteo(catchUp ? CONFIG.meteoLimit : CONFIG.meteoPollLimit)
+      Api.getWind(currentStation, catchUp ? CONFIG.windLimit : CONFIG.windPollLimit)
     ];
+    // meteo only changes ~every 30 s, so it gets its own slower cadence
+    if (catchUp || Date.now() - lastMeteoPoll >= CONFIG.meteoPollMs) {
+      lastMeteoPoll = Date.now();
+      jobs.push(Api.getMeteo(catchUp ? CONFIG.meteoLimit : CONFIG.meteoPollLimit));
+    }
     Promise.allSettled(jobs).then(function (results) {
       Widget.notePoll(results.some(function (r) { return r.status === 'fulfilled'; }));
       Widget.update(currentStation);

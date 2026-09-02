@@ -23,8 +23,8 @@ Puebla, MX, plus one shared meteo sensor).
 - About / Dir.Stat. (16-sector wind rose of the last 15 min) / LoRa (raw telemetry log) tabs.
 - Fast loads, low bandwidth: two-phase boot (live widget paints first, history follows),
   completed days' historial responses cached in localStorage (only today is refetched),
-  incremental 5 s polls (~1 KB: only new rows, merged by id, with automatic full catch-up
-  after tab sleep), LoRa log loaded lazily when its tab opens, deferred scripts and
+  incremental polls fetching only new rows merged by id (wind every 5 s ~1 KB; meteo every
+  30 s — its sensor block only arrives ~each 30 s — with automatic full catch-up after tab sleep), LoRa log loaded lazily when its tab opens, deferred scripts and
   preconnect hints. A green pulse dot + "checked HH:MM:SS" clock in the title bar show
   every poll, separate from the data-age counter (the station transmits in bursts).
 - Sunrise/sunset via NOAA formula; all times shown as America/Mexico_City wall clock.

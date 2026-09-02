@@ -43,7 +43,8 @@ var CONFIG = {
   // Meteo sensor (temperature/humidity/pressure/battery) is shared between stations
   meteoAltitude: 2145,
 
-  livePollMs: 5000,        // wind + latest meteo poll (matches the original panel)
+  livePollMs: 5000,        // wind poll (station samples wind every ~5 s)
+  meteoPollMs: 30000,      // meteo poll (the THPB block only arrives ~every 30 s)
   slowPollMs: 5 * 60000,   // today's historial (+ LoRa when that tab is open)
   windLimit: 200,          // full fetch: initial load and catch-up after tab sleep
   windPollLimit: 12,       // incremental 5 s poll (~1 min of samples, merged by id)
