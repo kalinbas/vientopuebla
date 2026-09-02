@@ -106,6 +106,24 @@ a { color: #1a5276; }
 #polldot.flash { background: #3dff3d; transition: none; }
 #polldot.err { background: #ff5040; transition: none; }
 
+/* outdated-data warning: banner + grayed live values */
+#stale_banner {
+  background: #d84315;
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  padding: 7px 10px;
+  border-bottom: 2px solid #8f2a0c;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+#stale_banner .sb_small { font-weight: normal; font-size: 12px; opacity: 0.95; }
+.widget.stale_mode .w_dial,
+.widget.stale_mode .w_data,
+.widget.stale_mode .w_tabs {
+  filter: grayscale(0.85) opacity(0.65);
+}
+
 .w_body {
   display: flex;
   align-items: stretch;

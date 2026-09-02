@@ -102,15 +102,36 @@ var Widget = (function () {
     if (ok) dotTimer = setTimeout(function () { dot.classList.remove('flash'); }, 350);
   }
 
-  // 1-second ticker: freshness only
+  // 1-second ticker: freshness + the unmissable outdated-data state
+  var baseTitle = document.title;
   function tick(stationId) {
     var live = Api.liveStats(stationId);
     var el = $('updated');
-    if (!el) return;
-    if (!live) { el.innerHTML = 'no data'; el.className = 'stale'; return; }
-    var age = (Date.now() - live.epoch) / 1000;
-    el.innerHTML = '⏱ ' + Util.agoText(age);
-    el.className = age > CONFIG.staleAfterSec ? 'stale' : '';
+    var banner = $('stale_banner');
+    var widget = document.querySelector('.widget');
+    var stale;
+
+    if (!live) {
+      stale = true;
+      if (el) { el.innerHTML = 'no data'; el.className = 'stale'; }
+      if (banner) banner.innerHTML = '⚠ NO DATA received from this station yet';
+    } else {
+      var age = (Date.now() - live.epoch) / 1000;
+      stale = age > CONFIG.staleAfterSec;
+      if (el) {
+        el.innerHTML = '⏱ ' + Util.agoText(age);
+        el.className = stale ? 'stale' : '';
+      }
+      if (stale && banner) {
+        banner.innerHTML = '⚠ OUTDATED DATA — station last transmitted at <b>' +
+          (live.time || '').slice(11, 16) + '</b> (' +
+          Util.agoText(age).replace(/<\/?b>/g, '') +
+          ') <span class="sb_small">· values shown are the last received</span>';
+      }
+    }
+    if (banner) banner.style.display = stale ? '' : 'none';
+    if (widget) widget.classList.toggle('stale_mode', !!stale);
+    document.title = (stale ? '⚠ ' : '') + baseTitle;
   }
 
   return { update: update, tick: tick, notePoll: notePoll, stationCfg: stationCfg };
