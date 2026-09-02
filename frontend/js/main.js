@@ -131,6 +131,9 @@
       Widget.notePoll(results.some(function (r) { return r.status === 'fulfilled'; }));
       Widget.update(currentStation);
       if (currentTab === 'dirstat') Rose.draw('rose_canvas', currentStation);
+      // in history-API-down fallback, today's table is rebuilt from live wind,
+      // so refresh it each poll to grow/update the reconstructed columns
+      if (Api.historialDown()) Tables.render(currentStation);
     });
   }
 
