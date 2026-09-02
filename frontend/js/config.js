@@ -43,9 +43,14 @@ var CONFIG = {
   meteoAltitude: 2145,
 
   livePollMs: 5000,        // wind + latest meteo poll (matches the original panel)
-  slowPollMs: 5 * 60000,   // today's historial + full meteo history + LoRa refresh
-  windLimit: 200,          // raw sample fetch size (server keeps only a recent window)
-  meteoLimit: 500,         // server cap
+  slowPollMs: 5 * 60000,   // today's historial (+ LoRa when that tab is open)
+  windLimit: 200,          // full fetch: initial load and catch-up after tab sleep
+  windPollLimit: 12,       // incremental 5 s poll (~1 min of samples, merged by id)
+  meteoLimit: 500,         // full fetch (server cap); initial load and catch-up
+  meteoPollLimit: 2,       // incremental 5 s poll, merged by id
+  rawKeep: 600,            // wind samples kept in memory per station (~50 min)
+  meteoKeep: 600,          // meteo rows kept in memory (~5-10 h, feeds the graphs)
+  catchUpAfterMs: 60000,   // poll gap that triggers a full refetch (browser throttled the tab)
   loraLimit: 30,
 
   graphDays: 6,            // today + 5 previous days, like Holfuy's ~6-day span

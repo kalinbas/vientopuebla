@@ -88,6 +88,20 @@ var Widget = (function () {
     tick(stationId);
   }
 
+  // called after every poll round: proves liveness even when the station is silent
+  var dotTimer = null;
+  function notePoll(ok) {
+    var lc = $('lastcheck');
+    if (lc) lc.textContent = 'checked ' + Util.nowMxClock();
+    var dot = $('polldot');
+    if (!dot) return;
+    clearTimeout(dotTimer);
+    dot.classList.remove('flash', 'err');
+    void dot.offsetWidth; // restart transition
+    dot.classList.add(ok ? 'flash' : 'err');
+    if (ok) dotTimer = setTimeout(function () { dot.classList.remove('flash'); }, 350);
+  }
+
   // 1-second ticker: freshness only
   function tick(stationId) {
     var live = Api.liveStats(stationId);
@@ -99,5 +113,5 @@ var Widget = (function () {
     el.className = age > CONFIG.staleAfterSec ? 'stale' : '';
   }
 
-  return { update: update, tick: tick, stationCfg: stationCfg };
+  return { update: update, tick: tick, notePoll: notePoll, stationCfg: stationCfg };
 })();

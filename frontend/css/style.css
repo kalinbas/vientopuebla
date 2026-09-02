@@ -91,8 +91,20 @@ a { color: #1a5276; }
   justify-content: space-between;
   align-items: center;
 }
-#updated { font-size: 12px; font-weight: normal; }
+.w_right { display: flex; align-items: center; gap: 10px; font-weight: normal; }
+#updated { font-size: 12px; }
 #updated.stale { color: #ff7b6b; font-weight: bold; }
+#lastcheck { font-size: 11px; color: #9ec89e; }
+#polldot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #555;
+  display: inline-block;
+  transition: background 0.9s ease;
+}
+#polldot.flash { background: #3dff3d; transition: none; }
+#polldot.err { background: #ff5040; transition: none; }
 
 .w_body {
   display: flex;

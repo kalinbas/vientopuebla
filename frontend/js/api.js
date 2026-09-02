@@ -26,20 +26,33 @@ var Api = (function () {
 
   /* ---- fetchers (normalize to ascending-time arrays of numbers) ---- */
 
-  function getWind(est) {
-    return fetchJson('api_viento_ultimos.php', { limit: CONFIG.windLimit, estacion: est })
+  // Small limits (the 5-second poll) are merged into the stored history by id;
+  // a full-size fetch replaces it. Keeps steady-state polling to ~1 KB per call.
+  function getWind(est, limit) {
+    limit = limit || CONFIG.windLimit;
+    return fetchJson('api_viento_ultimos.php', { limit: limit, estacion: est })
       .then(function (j) {
         if (!j.ok) throw new Error('api viento not ok');
         var items = (j.items || []).map(function (it) {
           return {
+            id: +it.id,
             v: +it.velocidad, d: +it.direccion, tiempo: it.tiempo,
             epoch: Util.parseMxEpoch(it.tiempo), wall: Util.parseMxWall(it.tiempo)
           };
         }).filter(function (x) { return isFinite(x.epoch); });
         items.sort(function (a, b) { return a.epoch - b.epoch; });
-        store.stations[est].raw = items;
+        var st = store.stations[est];
+        if (limit < CONFIG.windLimit && st.raw.length) {
+          var known = {};
+          st.raw.forEach(function (s) { known[s.id] = 1; });
+          items.forEach(function (s) { if (!known[s.id]) st.raw.push(s); });
+          st.raw.sort(function (a, b) { return a.epoch - b.epoch; });
+        } else {
+          st.raw = items;
+        }
+        if (st.raw.length > CONFIG.rawKeep) st.raw.splice(0, st.raw.length - CONFIG.rawKeep);
         store.lastFetchOk = Date.now();
-        return items;
+        return st.raw;
       });
   }
 
@@ -71,6 +84,8 @@ var Api = (function () {
         } else {
           store.meteo = items;
         }
+        if (store.meteo.length > CONFIG.meteoKeep)
+          store.meteo.splice(0, store.meteo.length - CONFIG.meteoKeep);
         store.lastFetchOk = Date.now();
         return store.meteo;
       });

@@ -105,17 +105,27 @@
 
   /* ---- polling ---- */
 
+  var lastLivePoll = Date.now();
+
   function livePoll() {
-    var jobs = CONFIG.stations.map(function (s) { return Api.getWind(s.id); });
-    jobs.push(Api.getMeteo(3));
-    Promise.allSettled(jobs).then(function () {
+    // after a long gap (backgrounded tab, sleep) do one full refetch to fill the hole
+    var catchUp = Date.now() - lastLivePoll > CONFIG.catchUpAfterMs;
+    lastLivePoll = Date.now();
+    var jobs = CONFIG.stations.map(function (s) {
+      return Api.getWind(s.id, catchUp ? CONFIG.windLimit : CONFIG.windPollLimit);
+    });
+    jobs.push(Api.getMeteo(catchUp ? CONFIG.meteoLimit : CONFIG.meteoPollLimit));
+    Promise.allSettled(jobs).then(function (results) {
+      Widget.notePoll(results.some(function (r) { return r.status === 'fulfilled'; }));
       Widget.update(currentStation);
       if (currentTab === 'dirstat') Rose.draw('rose_canvas', currentStation);
     });
   }
 
+  // meteo stays current via the incremental live poll; only today's historial
+  // (and yesterday's around midnight — otherwise cache-served) needs refreshing
   function slowPoll() {
-    var jobs = [Api.getMeteo()];
+    var jobs = [];
     CONFIG.stations.forEach(function (s) {
       jobs.push(Api.getHistorial(Util.todayMx(), s.id));
       jobs.push(Api.getHistorial(Util.todayMx(-1), s.id)); // covers midnight rollover
@@ -146,7 +156,8 @@
     Api.cachePrune();
 
     // Phase 1: fast first paint — live widget for the current station only
-    Promise.allSettled([Api.getWind(currentStation), Api.getMeteo(3)]).then(function () {
+    Promise.allSettled([Api.getWind(currentStation), Api.getMeteo(3)]).then(function (results) {
+      Widget.notePoll(results.some(function (r) { return r.status === 'fulfilled'; }));
       Widget.update(currentStation);
       showTab(currentTab);
     });
@@ -163,6 +174,7 @@
       var failed = results.filter(function (r) { return r.status === 'rejected'; }).length;
       if (failed) console.warn(failed + ' of ' + results.length + ' initial requests failed');
       renderAll();
+      lastLivePoll = Date.now();
       setInterval(livePoll, CONFIG.livePollMs);
       setInterval(slowPoll, CONFIG.slowPollMs);
       setInterval(function () { Widget.tick(currentStation); }, 1000);
